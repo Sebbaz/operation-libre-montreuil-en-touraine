@@ -24,7 +24,7 @@ def cleanup(cr):
     return cr
 
 
-re_start_presences = re.compile(ur'pr[ée]sen(ts|ces)', re.I)
+re_start_presences = re.compile(ur'(?<!nombre de )pr[ée]sen(ts|ces)', re.I)
 re_secretaire = re.compile(ur'secr[ée]taires? de s[ée]ance', re.I)
 
 
@@ -63,6 +63,7 @@ re_pouvoirs = [
     re.compile(ur'(.+) a donn[eé] procuration [àa] (.+)', re.I),
     re.compile(ur'(.+) \(pouvoir (.+)\)', re.I),
     re.compile(ur'(.+) \(a donné (?:pourvoir|procuration) à (.*)(?: à partir .*)\)', re.I),
+    re.compile(ur'(?:pouvoirs? *:|,)\s*(?:Mme|Mr|M\.?) (.+) à (?:Mme|Mr|M\.?) (\w*\s?)', re.I),
 ]
 
 re_pouvoir_prec = [
@@ -71,7 +72,7 @@ re_pouvoir_prec = [
 ]
 
 re_cleanup_noms = re.compile(ur'^([Éée]lus|retard|pouvoirs?)\s*:\s*', re.I)
-re_cleanup_sec = re.compile(ur' (est )?(déclaré|désigné)e?.*', re.I)
+re_cleanup_sec = re.compile(ur' (est |a été )?(déclaré|désigné|[eé]lu)e?.*', re.I)
 re_ignore = re.compile(ur'(^(mairie|public)\s*:\s*)|(^\s*/\s*)$', re.I)
 re_split_noms = re.compile(r'(?:\s*,\s*|\s+et\s+)', re.I)
 
@@ -100,6 +101,9 @@ def cleanup_nom(nom):
     nom = re.sub(ur' \(qui donne pour?voir .*', '', nom)
     nom = re.sub(ur' \(a donné pour?voir .*', '', nom)
     nom = re.sub(ur' : absente? sans pouvoir', '', nom)
+    nom = re.sub(ur'^(?:M(es|on)sieurs?)', '', nom)
+    nom = re.sub(ur'^(?:(Ma|Mes)(?:dame|demoiselle))s?', '', nom)
+    nom = re.sub(ur'(\-?[A-Z][a-z]+)?', '', nom)
 
     if nom == '/':
         return ''
@@ -185,7 +189,7 @@ def extract_presences(date, plines):
                     })
 
                 if state == 'sec':
-                    person = cleanup_nom(re_cleanup_sec.sub('', person))
+		    person = cleanup_nom(re_cleanup_sec.sub('', person))
                     if not len(nom):
                         continue
 

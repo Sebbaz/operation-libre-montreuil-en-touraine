@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "mot;nombre;type;annee" > data/mots_annees.csv
-for annee in 2012 2013 2014 2015 2016 ; do 
+for annee in 2008 2009 ; do 
 	date=$(echo $annee"-01-01")
 	cat "txt/comptes-rendus/"$annee"-"*txt | 
         sed 's/[:;\t\.\,«»"]/ /g' |
