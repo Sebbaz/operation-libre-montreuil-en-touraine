@@ -1,6 +1,6 @@
 # Opération Libre Aiglun
 
-Ce dépôt contient le travail réalisé lors de l'Opération Libre 2016 à Aiglun.
+Ce dépôt contient le travail réalisé lors de l'Opération Libre 2016 à Montreuil en touraine.
 
 ## Contenu principal du dépôt
 
