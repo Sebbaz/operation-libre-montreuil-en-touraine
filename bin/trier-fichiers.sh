@@ -29,14 +29,14 @@
 savIFS=$IFS
 
 # Project dir vars
-BASE= $(dirname $(dirname $0))
+BASE=$(dirname $(dirname $0))/
 sources_dir=${BASE}"sources/"
 tmp_dir=${BASE}"tmp/symbolicLinks/"
 outDir=${BASE}"data/"
 outCsvFileName="FSMetadata.csv"
 
 # option variables
-opt_src_path=${sources_dir}
+opt_src_path=${sourcrootes_dir}
 opt_out_path=${outDir}${outCsvFileName}
 opt_debug=false
 
@@ -51,10 +51,9 @@ opt_debug=false
 ######################
 
 function check_args() {
-
-  if [ ! -z "${BASE}" ]; then
-    if [ ! -r "${BASE}" ]; then
-      exit_usage "File given to -f cannot be read"
+  if [ ! -z "${opt_src_path}" ]; then
+    if [ ! -r "${opt_src_path}" ]; then
+      exit_usage "File given to -o cannot be read"
     fi
   fi
 }
@@ -145,7 +144,8 @@ preamble
 # get bash options
 while getopts "i:o:dh" opt; do
   case ${opt} in
-    i) opt_src_path=$OPTARG ;;
+    i) opt_src_path=$OPTARG
+       sources_dir=${opt_src_path};;
     o) opt_out_path=$OPTARG ;;
     d) opt_debug=true ;;
     h) exit_usage ;;
@@ -162,7 +162,7 @@ IFS=$'\n'
 echo "LastModified;Directories;FileName;FileExtension;FileMimeType;FileEncoding;FileSize(kB);Hash" > ${opt_out_path}
 
 # recursively loop over sources, get metadata, output to csv Files and
-for file in $(find "${opt_src_path}" -type f -follow)
+for file in $(find "${sources_dir}" -type f -follow)
 do
   info "Reading file ${file}."
   debug "Getting last access time..."
