@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#    Prepare a electronic documents analysis
+#    Prepare a numerical documents analysis
 #    Walk into a folder to extract File System metadata (ext4) to a csv file,
 #    and generate a flat symlink view into a single folder.
 #    Copyright (C) 2016-2017 Sébastien BAZAUD
@@ -22,89 +22,29 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>."
 
+####################
+# Global variables #
+####################
+#save the old Internal Field Separator to work with spaces
+savIFS=$IFS
 
-###########
-# Helpers #
-###########
+# Project dir vars
+BASE= $(dirname $(dirname $0))
+sources_dir=${BASE}"sources/"
+tmp_dir=${BASE}"tmp/symbolicLinks/"
+outDir=${BASE}"data/"
+outCsvFileName="FSMetadata.csv"
 
-function preamble() {
-  local confirm=no
+# option variables
+opt_src_path=${sources_dir}
+opt_out_path=${outDir}${outCsvFileName}
+opt_debug=false
 
-  echo -ne "\e[91m"
-  echo "THERE IS NO WARRANTY FOR THIS PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW."
-  echo "EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER"
-  echo "PARTIES PROVIDE THE PROGRAM \"AS IS\" WITHOUT WARRANTY OF ANY KIND, EITHER"
-  echo "EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF"
-  echo "MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE"
-  echo "QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU. SHOULD THE PROGRAM PROVE"
-  echo "DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION."
-  echo -e "\e[39m"
+#############
+# LIbraries #
+#############
 
-}
-
-function show_usage() {
-  echo -e "\e[1mOPTIONS\e[0m" >&2
-  echo -e "  \e[1m-i\e[0m \e[4mpath\e[0m" >&2
-  echo -e "     Path of source folder (e.g. /dev/sdb, /dev/mmcblk0)" >&2
-  echo -e "     \e[2mDefault: ./sources/\e[0m" >&2
-  echo -e "  \e[1m-o\e[0m \e[4mfile\e[0m" >&2
-  echo -e "     Name of output CSV file" >&2
-  echo -e "     \e[2mDefault : ./data/FSMetadata.csv\e[0m" >&2
-  echo -e "  \e[1m-d\e[0m" >&2
-  echo -e "     Enable debug messages" >&2
-  echo -e "  \e[1m-h\e[0m" >&2
-  echo -e "     Show this help" >&2
-}
-
-function exit_error() {
-  local msg=${1}
-  local usage=${2}
-
-  if [ ! -z "${msg}" ]; then
-    echo -e "\e[31m\e[1m[ERR] $1\e[0m" >&2
-  fi
-
-  if [ "${usage}" == usage ]; then
-    if [ -z "${msg}" ]; then
-      echo -e "\n       \e[7m\e[1m Metadata FS Extractor \e[0m\n"
-    else
-      echo
-    fi
-
-    show_usage
-  fi
-
-  exit 1
-}
-
-function exit_usage() {
-  local msg=${1}
-  exit_error "${msg}" usage
-}
-
-function exit_normal() {
-  exit 0
-}
-
-function info() {
-  local msg=${1}
-
-  echo -e "\e[32m[INFO] $(date -R): ${msg}\e[0m" >&2
-}
-
-function warn() {
-  local msg=${1}
-
-  echo -e "\e[93m[WARN] $(date -R): ${msg}\e[0m" >&2
-}
-
-function debug() {
-  local msg=${1}
-
-  if $opt_debug; then
-    echo -e "\e[33m[DEBUG] $(date -R): ${msg}\e[0m" >&2
-  fi
-}
+. ${BASE}/bin/lib/helpers.sh
 
 ######################
 # Checking functions #
@@ -112,28 +52,9 @@ function debug() {
 
 function check_args() {
 
-  if [ ! -z "${opt_imgpath}" ]; then
-    if [ ! -r "${opt_imgpath}" ]; then
+  if [ ! -z "${BASE}" ]; then
+    if [ ! -r "${BASE}" ]; then
       exit_usage "File given to -f cannot be read"
-    fi
-
-    if [[ ! "${opt_imgpath}" =~ \.img(\.tar\.xz)?$ ]]; then
-      exit_usage "Filename given to -f must end with .img or .img.tar.xz"
-    fi
-
-    if [ -z "${opt_gpgpath}" ]; then
-      if [ -r "${opt_imgpath}.asc" ]; then
-        info "Local GPG signature file found"
-        opt_gpgpath="${opt_imgpath}.asc"
-      fi
-    else
-      if [[ "${opt_imgpath}" =~ \.img$ ]] ; then
-        exit_usage "File given to -g cannot be used for checking the file given to -f (not archive version)"
-      fi
-
-      if [ "$(basename "${opt_gpgpath}")" != "$(basename "${opt_imgpath}").asc" ] ; then
-        exit_usage "Based on filenames, file given to -g seems not correspond to the file given to -f"
-      fi
     fi
   fi
 }
@@ -148,7 +69,7 @@ function cleaning_exit() {
 
   trap - EXIT ERR INT
 
-  if $opt_debug && [ "${status}" -ne 0 -o "${error}" == error ]; then
+  if ${opt_debug} && [ "${status}" -ne 0 -o "${error}" == error ]; then
     debug "There was an error, press Enter for doing cleaning"
     read -s
 
@@ -211,24 +132,6 @@ function getFileExtension() {
   echo ${1} | rev | cut -d"." -f 1 | rev
 }
 
-####################
-# Global variables #
-####################
-#save the old Internal Field Separator to work with spaces
-savIFS=$IFS
-
-# Project dir vars
-root=$(pwd)"/"
-sources_dir=${root}"sources/"
-tmp_dir=${root}"tmp/symbolicLinks/"
-outDir=${root}"data/"
-outCsvFileName="FSMetadata.csv"
-
-# option variables
-opt_src_path=${sources_dir}
-opt_out_path=${outDir}${outCsvFileName}
-opt_debug=false
-
 ##############
 # The Script #
 ##############
@@ -241,7 +144,7 @@ preamble
 
 # get bash options
 while getopts "i:o:dh" opt; do
-  case $opt in
+  case ${opt} in
     i) opt_src_path=$OPTARG ;;
     o) opt_out_path=$OPTARG ;;
     d) opt_debug=true ;;
@@ -251,7 +154,7 @@ while getopts "i:o:dh" opt; do
 done
 
 # Check if tmp dir is empty and created
-check_and_create_dir $tmp_dir
+check_and_create_dir ${tmp_dir}
 
 IFS=$'\n'
 
